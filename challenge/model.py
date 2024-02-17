@@ -6,7 +6,7 @@ from sklearn.linear_model import LogisticRegression
 
 class DelayModel:
 
-    FEATURES = [
+    FEATURES_COL = [
         "OPERA_Latin American Wings", 
         "MES_7",
         "MES_10",
@@ -19,7 +19,9 @@ class DelayModel:
         "OPERA_Copa Air"
     ]
 
-    TARGET = 'delay'
+    TARGET_COL = 'delay'
+
+    DELAY_THRESHOLD_MIN = 15
     
     def __init__(
         self
@@ -30,7 +32,7 @@ class DelayModel:
         self,
         data: pd.DataFrame,
         target_column: str = None
-    ) -> Union(Tuple[pd.DataFrame, pd.DataFrame], pd.DataFrame):
+    ) -> Union[Tuple[pd.DataFrame, pd.DataFrame], pd.DataFrame]:
         """
         Prepare raw data for training or predict.
 
@@ -43,7 +45,6 @@ class DelayModel:
             or
             pd.DataFrame: features.
         """
-        # TODO: target -> Series
         # TODO: dropna
         # TODO: missing columns
         features = pd.concat(
@@ -56,9 +57,13 @@ class DelayModel:
         )
 
         if target_column:
-            return features[self.FEATURES], data[self.TARGET]
+            target = pd.to_datetime(data['Fecha-O']) - pd.to_datetime(data['Fecha-I']) > pd.Timedelta(minutes=self.DELAY_THRESHOLD_MIN)
+            target.replace({True: 1, False: 0}, inplace=True)
+            target.name = self.TARGET_COL
+
+            return features[self.FEATURES_COL], target.to_frame()
         
-        return features[self.FEATURES]
+        return features[self.FEATURES_COL]
 
     def fit(
         self,
@@ -72,6 +77,8 @@ class DelayModel:
             features (pd.DataFrame): preprocessed data.
             target (pd.DataFrame): target.
         """
+        target = target[self.TARGET_COL]
+        
         weights = {
             1: sum(target == 0)/len(target),
             0: sum(target == 1)/len(target)
@@ -79,7 +86,7 @@ class DelayModel:
 
         model = LogisticRegression(class_weight=weights)
         model.fit(features, target)
-        
+
         self._model = model
 
     def predict(
@@ -96,4 +103,4 @@ class DelayModel:
             (List[int]): predicted targets.
         """
         
-        return self._model.predict(features).values
+        return self._model.predict(features).tolist()
