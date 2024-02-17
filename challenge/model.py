@@ -2,8 +2,25 @@ import pandas as pd
 
 from typing import Tuple, Union, List
 
+from sklearn.linear_model import LogisticRegression
+
 class DelayModel:
 
+    FEATURES = [
+        "OPERA_Latin American Wings", 
+        "MES_7",
+        "MES_10",
+        "OPERA_Grupo LATAM",
+        "MES_12",
+        "TIPOVUELO_I",
+        "MES_4",
+        "MES_11",
+        "OPERA_Sky Airline",
+        "OPERA_Copa Air"
+    ]
+
+    TARGET = 'delay'
+    
     def __init__(
         self
     ):
@@ -26,7 +43,22 @@ class DelayModel:
             or
             pd.DataFrame: features.
         """
-        return
+        # TODO: target -> Series
+        # TODO: dropna
+        # TODO: missing columns
+        features = pd.concat(
+            [
+                pd.get_dummies(data['OPERA'], prefix='OPERA'),
+                pd.get_dummies(data['TIPOVUELO'], prefix='TIPOVUELO'), 
+                pd.get_dummies(data['MES'], prefix='MES')
+            ], 
+            axis = 1
+        )
+
+        if target_column:
+            return features[self.FEATURES], data[self.TARGET]
+        
+        return features[self.FEATURES]
 
     def fit(
         self,
@@ -40,7 +72,15 @@ class DelayModel:
             features (pd.DataFrame): preprocessed data.
             target (pd.DataFrame): target.
         """
-        return
+        weights = {
+            1: sum(target == 0)/len(target),
+            0: sum(target == 1)/len(target)
+        }
+
+        model = LogisticRegression(class_weight=weights)
+        model.fit(features, target)
+        
+        self._model = model
 
     def predict(
         self,
@@ -55,4 +95,5 @@ class DelayModel:
         Returns:
             (List[int]): predicted targets.
         """
-        return
+        
+        return self._model.predict(features).values
