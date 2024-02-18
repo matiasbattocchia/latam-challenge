@@ -44,7 +44,7 @@ integration test which probes `DelayModel` against baseline metrics.
 
 **Note**: I would have used [Deserve](https://github.com/matiasbattocchia/deserve) instead of FastAPI.
 
-Even though I used a virtualenv and installed packages with versions from the requirements files, I had to bump the FastAPI version due some obscure errors during `make test-api`. My Python version is 3.10.
+Even though I used a virtualenv and installed packages with versions from the requirements files, I had to bump the FastAPI version and install `httpx` due some obscure errors during `make test-api`. My Python version is 3.10.
 
 Added methods to `DelayModel` to `save` and `load` trained models, in order for the app to load a working model. I mocked the model in `test_api.py`, though.
 
@@ -60,7 +60,7 @@ I modified some test input values, please see the inline comments. I also change
 
 I removed the train test split from `test_performance.py`. The original implementation trained with the whole dateset and tested with a subset of it. For the sake of testing that the model can do well against the training data, the test split is not needed at all. Of course, I do not expect to get any measurement of the actual performance in this step.
 
-I created the `deploy.py` script. The deploy script trains the model and then stores it in a `delay_model.pkl` pickle file. The script also produces a report, which is saved as a `report.json` json file. Thinking ahead, these two files should be tracked / versioned. I modified `api.py` to load the saved model.
+I created the `train.py` script. The deploy script trains the model and then stores it in a `delay_model.pkl` pickle file. The script also produces a report, which is saved as a `report.json` json file. Thinking ahead, **these two files should be tracked / versioned**. I modified `api.py` to load the saved model.
 
 Now that `api.py` imports the model from `model.py`, I had to bump the `pytest` version and to add a `pytest.ini` file to support modules which import local modules.
 
@@ -85,3 +85,13 @@ docker tag latam us-central1-docker.pkg.dev/agendar-391402/latam-challenge/app
 docker push us-central1-docker.pkg.dev/agendar-391402/latam-challenge/app
 curl -X POST https://app-qbwyoeomoa-uc.a.run.app/predict -H 'Content-Type: application/json' -d '{"flights": [{"OPERA": "Grupo LATAM", "TIPOVUELO": "N","MES": 3}]}'
 ```
+
+## Part 4
+
+I implemented the continuous integration workflow at `ci.yml`. This workflow runs the model and API tests from parts 1 and 2.
+
+On the contrary, I did not implement `cd.yml` for the continuous deployment workflow. Instead, I used the Cloud Run integration with GitHub, which did the hard work for me. A Cloud Build process gets triggered on commit on the `main` branch. 
+
+![](gcp-screenshot-1.png)
+
+![](gcp-screenshot-2.png)

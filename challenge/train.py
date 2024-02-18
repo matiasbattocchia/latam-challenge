@@ -3,8 +3,13 @@ import json
 from sklearn.metrics import classification_report
 from sklearn.model_selection import train_test_split
 from model import DelayModel
+import pathlib
 
-data = pd.read_csv(filepath_or_buffer="data/data.csv", low_memory=False)
+# TODO: accept CLI arguments to set input/output paths and training arguments
+
+challenge_dir = pathlib.Path(__file__).parent
+
+data = pd.read_csv(challenge_dir.parent / "data/data.csv", low_memory=False)
 model = DelayModel()
 
 features, target = model.preprocess(
@@ -25,7 +30,7 @@ target_predicted = model.predict(
 
 report = classification_report(target_test, target_predicted, output_dict=True)
 
-with open("challenge/report.json", "w") as file:
+with open(challenge_dir / "report.json", "w") as file:
     json.dump(report, file, indent=4)
 
-model.save("challenge/delay_model.pkl")
+model.save(challenge_dir / "delay_model.pkl")
