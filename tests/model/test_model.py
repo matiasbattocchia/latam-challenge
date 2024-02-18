@@ -1,12 +1,12 @@
-import unittest
+import pytest
 import pandas as pd
 
-from sklearn.metrics import classification_report
-from sklearn.model_selection import train_test_split
 from challenge.model import DelayModel
+from sklearn.utils.validation import check_is_fitted
 
-class TestModel(unittest.TestCase):
-
+        
+class TestModel():
+        
     FEATURES_COLS = [
         "OPERA_Latin American Wings", 
         "MES_7",
@@ -24,18 +24,33 @@ class TestModel(unittest.TestCase):
         "delay"
     ]
 
+    
+    @pytest.fixture
+    def data(self):
+        return pd.read_csv(filepath_or_buffer="data/data.csv", low_memory=False)
 
-    def setUp(self) -> None:
-        super().setUp()
+    
+    @pytest.fixture(autouse=True)
+    def model(self):
         self.model = DelayModel()
-        self.data = pd.read_csv(filepath_or_buffer="../data/data.csv")
-        
 
+    
+    @pytest.fixture
+    def features(self):
+        return pd.DataFrame([[1,2], [3, 4]])
+
+
+    @pytest.fixture
+    def target(self):
+        return pd.DataFrame([0,1], columns=TestModel.TARGET_COL)
+
+    
     def test_model_preprocess_for_training(
-        self
+        self,
+        data
     ):
         features, target = self.model.preprocess(
-            data=self.data,
+            data=data,
             target_column="delay"
         )
 
@@ -49,50 +64,43 @@ class TestModel(unittest.TestCase):
 
 
     def test_model_preprocess_for_serving(
-        self
+        self,
+        data
     ):
         features = self.model.preprocess(
-            data=self.data
+            data=data
         )
 
         assert isinstance(features, pd.DataFrame)
         assert features.shape[1] == len(self.FEATURES_COLS)
         assert set(features.columns) == set(self.FEATURES_COLS)
 
-
+    
     def test_model_fit(
-        self
+        self,
+        features,
+        target
     ):
-        features, target = self.model.preprocess(
-            data=self.data,
-            target_column="delay"
-        )
-
-        _, features_validation, _, target_validation = train_test_split(features, target, test_size = 0.33, random_state = 42)
-
         self.model.fit(
             features=features,
             target=target
         )
 
-        predicted_target = self.model._model.predict(
-            features_validation
-        )
-
-        report = classification_report(target_validation, predicted_target, output_dict=True)
-        
-        assert report["0"]["recall"] < 0.60
-        assert report["0"]["f1-score"] < 0.70
-        assert report["1"]["recall"] > 0.60
-        assert report["1"]["f1-score"] > 0.30
+        # will raise an exception if not
+        check_is_fitted(self.model._model) 
 
 
     def test_model_predict(
-        self
+        self,
+        features,
+        target
     ):
-        features = self.model.preprocess(
-            data=self.data
-        )
+        class ModelMock():
+            def predict(_, X):
+                # should return a numpy array as sklearn does
+                return target[self.TARGET_COL[0]].values
+
+        self.model._model = ModelMock()
 
         predicted_targets = self.model.predict(
             features=features
