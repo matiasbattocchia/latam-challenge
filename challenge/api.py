@@ -2,7 +2,6 @@ import fastapi
 from typing import Literal
 from pydantic import BaseModel, Field
 import pandas as pd
-# TODO: tests require to import from challenge.model
 from model import DelayModel
 import pathlib
 
