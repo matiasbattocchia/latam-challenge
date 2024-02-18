@@ -2,11 +2,12 @@ import fastapi
 from typing import Literal
 from pydantic import BaseModel, Field
 import pandas as pd
-from challenge.model import DelayModel
+from model import DelayModel
+import pathlib
 
 app = fastapi.FastAPI()
 
-model = DelayModel()
+model = DelayModel.load(pathlib.Path(__file__).parent / "delay_model.pkl")
 
 class Flight(BaseModel):
     # TODO: derive OPERA possible values from DelayModel

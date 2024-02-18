@@ -1,8 +1,8 @@
 import unittest
+import numpy as np
 from mockito import when, ANY
 from fastapi.testclient import TestClient
-from challenge import app
-import numpy as np
+from challenge.api import app
 from challenge.model import DelayModel
 
 class TestBatchPipeline(unittest.TestCase):
